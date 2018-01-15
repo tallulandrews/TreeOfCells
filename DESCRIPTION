@@ -1,0 +1,16 @@
+Package: TreeOfCells
+Version: 00.00.01
+Date: 2018-01-15
+Title: Inferring the Tree of Cells
+Author: Tallulah Andrews <tallulandrews@gmail.com>
+Maintainer: Tallulah Andrews <tallulandrews@gmail.com>
+Depends: R (>= 3.2.2)
+Imports: matrixStats, Matrix
+Suggests: knitr
+VignetteBuilder: knitr
+biocViews: RNASeq, Sequencing, Transcriptomics, GeneExpression, Software, Pseudotime
+Collate: 
+Description: This package will do something at some point.
+URL: https://github.com/tallulandrews/TreeOfCells
+BugReports: https://github.com/tallulandrews/TreeOfCells/issues
+License: GPL (>=3)
