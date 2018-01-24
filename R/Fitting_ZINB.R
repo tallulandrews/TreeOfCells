@@ -24,7 +24,6 @@ convert_to_integer <- function(mat) {
 }
 
 fit_negative_binomial <- function(counts) {
-	vals <- calculate_summary_values(counts);
 #	mus <- (vals$tjs) %*% t(vals$tis/vals$total)
 	
 	min_size <- 10^-10;
@@ -57,7 +56,49 @@ calc_expected_zeros <- function(fit) {
 	return(droprate_exp);
 }
 
-fit_zero_inflated_negative_binomial <- function() {
+fit_ZINB_to_Matrix <- function(counts) {
+	vals <- calculate_summary_values(counts);
+	out <- lapply(1:vals$ng, function(g) {
+		fit_zero_inflated_negative_binomial(counts[g,], g, vals)
+		})
+}
 
+fit_zero_inflated_negative_binomial <- function(obs, g_row, vals, e=0.00001) {
+	l_is <- vals$tis*vals$nc/vals$total # cell-specific weights due to difference in library size
+	d0 <- vals$djs[g_row]/vals$nc # dropout-rate, initially all zeros due to dropouts
+	max_r <- 10^10 # r = size parameter for R's nbinom
+
+	d_curr <- d0; 
+	d_prev <- -100;
+	while( abs(d_curr-d_prev) > e ) {
+
+		# Fit the NB #
+		mu_j <- vals$tjs[g_row]/(vals$nc-d_curr*vals$nc) # dropouts only affect zeros to just change the denominator of the mean
+		mu_ijs <- mu_j*l_is; #account for different library sizes
+		weights <- rep(1, times=length(mu_ijs)) # rather than remove some columns 
+							
+		weights[obs == 0] <- (1-d_curr*vals$nc/vals$djs[g_row]) # lets down-weight the contribution of 
+									# zeros for fitting the NB
+		# Note: error = n*variance 
+		# weight-adjusted observed error correcting for cell-specific library sizes
+		obs_err <- (obs - mu_ijs)^2*weights
+
+		# fit the dispersion as:
+		# Observed error = sum of variances of cell-specific NB distributions
+		# variance of NB = mean+mean^2/dispersion
+		# rearrange to solve for dispersion (r)
+		r_j <- sum( mu_ijs^2*weights )/(obs_err - sum(mu_ijs*weights))
+		if (r_j <= 0) {r_j <- max_r}
+
+		# probability of a zero in each cell given the NB
+		p_ijs <- (1 + mu_ijs/r_j)^(-r_j)
+		d_exp <- mean(p_ijs)
+
+		# Update dropout rate (d) estimate
+		d_prev <- d_curr
+		d_curr <- (vals$djs[g_row] - d_exp*vals$nc)/vals$nc
+		if (d_curr <= 0) {d_curr <- d_prev}
+	}
+	return(mu_j, r_j, d_prev);
 }
 
