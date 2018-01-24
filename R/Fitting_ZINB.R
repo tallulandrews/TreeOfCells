@@ -23,38 +23,6 @@ convert_to_integer <- function(mat) {
         return(mat)
 }
 
-fit_negative_binomial <- function(counts) {
-#	mus <- (vals$tjs) %*% t(vals$tis/vals$total)
-	
-	min_size <- 10^-10;
-	my_rowvar <- sapply(1:nrow(counts), function(i){
-				mu_is <- vals$tjs[i]*vals$tis/vals$total
-				var(as.vector(unlist(counts[i,]))-mu_is)
-			})
-		
-	size <- vals$tjs^2*(sum(vals$tis^2)/vals$total^2)/((vals$nc-1)*my_rowvar-vals$tjs) # for this to work with sparse matrices might need to implement in C
-	max_size <- 10*max(size);
-	size[size < 0] <- max_size;
-	size[size < min_size] <- min_size;
-#	size[size > max_size] <- max_size;
-
-	return(list(var_obs=my_rowvar, sizes=size, vals=vals))
-}
-
-calc_expected_zeros <- function(fit) {
-	vals <- fit$vals;
-	droprate_exp <- vector(length=vals$ng)
-	exp_size <- fit$sizes
-
-	for (i in 1:vals$ng) {
-                mu_is <- vals$tjs[i]*vals$tis/vals$total
-                p_is <- (1+mu_is/exp_size[i])^(-exp_size[i]);
-                #p_var_is <- p_is*(1-p_is);
-                droprate_exp[i] <- sum(p_is)/vals$nc;
-		#droprate_exp_err[i] <- sqrt(sum(p_var_is)/(vals$nc^2));
-        }
-	return(droprate_exp);
-}
 
 fit_ZINB_to_Matrix <- function(counts) {
 	vals <- calculate_summary_values(counts);
