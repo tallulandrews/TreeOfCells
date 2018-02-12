@@ -49,7 +49,7 @@ fit_zero_inflated_negative_binomial <- function(obs, g_row, vals, e=0.00001) {
 									# zeros for fitting the NB
 		# Note: error = n*variance 
 		# weight-adjusted observed error correcting for cell-specific library sizes
-		obs_err <- (obs - mu_ijs)^2*weights
+		obs_err <- sum( (obs - mu_ijs)^2*weights )
 
 		# fit the dispersion as:
 		# Observed error = sum of variances of cell-specific NB distributions
