@@ -24,11 +24,12 @@ convert_to_integer <- function(mat) {
 }
 
 
-fit_ZINB_to_Matrix <- function(counts) {
+fit_ZINB_to_matrix <- function(counts) {
 	vals <- calculate_summary_values(counts);
 	out <- lapply(1:vals$ng, function(g) {
 		fit_zero_inflated_negative_binomial(counts[g,], g, vals)
 		})
+	return(out);
 }
 
 fit_zero_inflated_negative_binomial <- function(obs, g_row, vals, e=0.00001) {
@@ -67,6 +68,19 @@ fit_zero_inflated_negative_binomial <- function(obs, g_row, vals, e=0.00001) {
 		d_curr <- (vals$djs[g_row] - d_exp*vals$nc)/vals$nc
 		if (d_curr <= 0) {d_curr <- d_prev}
 	}
-	return(mu_j, r_j, d_prev);
+	return(c(mu_j, r_j, d_prev));
 }
 
+
+fit_NB_to_matrix <- function(counts) {
+	vals <- calculate_summary_values(counts)
+	min_size <- 10^-10
+	my_rowvar <- sapply(1:nrow(counts), function(i) {
+		mu_is <- vals$tjs[i]*vals$tis/vals$total
+		var(as.vector(unlist(counts[i,]))-mu_is)
+		})
+	size <- vals$tjs^2*(sum(vals$tis^2)/vals$total^2)/((vals$nc-1)*my_rowvar-vals$tjs)
+	max_size <- 10*max(size);
+	size[size < 0] <- max_size;
+	return(list(var_obs=my_rowvar, sizes=size, vals=vals))
+}
