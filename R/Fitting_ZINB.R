@@ -66,7 +66,7 @@ fit_zero_inflated_negative_binomial <- function(obs, g_row, vals, e=0.00001) {
 		# Update dropout rate (d) estimate
 		d_prev <- d_curr
 		d_curr <- (vals$djs[g_row] - d_exp*vals$nc)/vals$nc
-		if (d_curr <= 0) {d_curr <- d_prev}
+		if (d_curr <= 0) {d_curr <- 0}
 	}
 	return(c(mu_j, r_j, d_prev));
 }
@@ -82,5 +82,6 @@ fit_NB_to_matrix <- function(counts) {
 	size <- vals$tjs^2*(sum(vals$tis^2)/vals$total^2)/((vals$nc-1)*my_rowvar-vals$tjs)
 	max_size <- 10*max(size);
 	size[size < 0] <- max_size;
-	return(list(var_obs=my_rowvar, sizes=size, vals=vals))
+	#return(list(var_obs=my_rowvar, mus=vals$tjs/vals$nc, sizes=size, vals=vals))
+	return(data.frame(mus=vals$tjs/vals$nc, sizes=size))
 }
