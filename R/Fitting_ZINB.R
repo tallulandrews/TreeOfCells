@@ -4,12 +4,12 @@ calculate_summary_values <- function(counts) {
 	if ( sum(counts >= 1) != sum(counts > 0) ) {stop("Error: Expression matrix is not integers! Please provide raw UMI counts.")}
 #        if (sum(!is.integer(counts)) >0) {stop("Expression matrix is not integers! Please provide a matrix (not data.frame) raw UMI counts!")}
 
-        tjs <- rowSums(counts, na.rm=T) # Total molecules/gene
+        tjs <- Matrix::rowSums(counts, na.rm=T) # Total molecules/gene
 	if (sum(tjs <= 0) > 0) {stop("Error: all genes must have at least one detected molecule.")}
-        tis <- colSums(counts, na.rm=T) # Total molecules/cell
+        tis <- Matrix::colSums(counts, na.rm=T) # Total molecules/cell
 	if (sum(tis <= 0) > 0) {stop("Error: all cells must have at least one detected molecule.")}
-        djs <- ncol(counts)-rowSums(counts > 0, na.rm=T) # Observed Dropouts per gene
-        dis <- nrow(counts)-colSums(counts > 0, na.rm=T) # Observed Dropouts per cell
+        djs <- ncol(counts)-Matrix::rowSums(counts > 0, na.rm=T) # Observed Dropouts per gene
+        dis <- nrow(counts)-Matrix::colSums(counts > 0, na.rm=T) # Observed Dropouts per cell
         nc <- length(counts[1,]) # Number of cells
         ng <- length(counts[,1]) # Number of genes
         total <- sum(tis, na.rm=T) # Total molecules sampled
@@ -19,16 +19,29 @@ calculate_summary_values <- function(counts) {
 convert_to_integer <- function(mat) {
         mat <- ceiling(as.matrix(mat))
         storage.mode(mat) <- "integer"
-        mat <- mat[rowSums(mat) > 0,]
+        mat <- mat[Matrix::rowSums(mat) > 0,]
         return(mat)
 }
 
 
 fit_ZINB_to_matrix <- function(counts) {
+	zeros <- which(Matrix::rowSums(counts) == 0);
+	if (length(zeros) > 0) {
+		counts <- counts[-zeros,]
+	}
+
 	vals <- calculate_summary_values(counts);
-	out <- lapply(1:vals$ng, function(g) {
+	out <- sapply(1:vals$ng, function(g) {
 		fit_zero_inflated_negative_binomial(counts[g,], g, vals)
 		})
+	colnames(out) <- rownames(counts);
+	out <- t(out);
+	if (length(zeros) > 0) {
+		out <- rbind(out, matrix(0, nrow=length(zeros), ncol=ncol(out)))
+		rownames(out) <- c(rownames(counts), names(zeros))
+	}
+	out <- out[order(rownames(out)),]
+	colnames(out) <- c("mu", "r", "d", "N")
 	return(out);
 }
 
@@ -68,7 +81,7 @@ fit_zero_inflated_negative_binomial <- function(obs, g_row, vals, e=0.00001) {
 		d_curr <- (vals$djs[g_row] - d_exp*vals$nc)/vals$nc
 		if (d_curr <= 0) {d_curr <- 0}
 	}
-	return(c(mu_j, r_j, d_prev));
+	return(c(mu_j, r_j, d_prev, vals$nc));
 }
 
 
@@ -83,5 +96,19 @@ fit_NB_to_matrix <- function(counts) {
 	max_size <- 10*max(size);
 	size[size < 0] <- max_size;
 	#return(list(var_obs=my_rowvar, mus=vals$tjs/vals$nc, sizes=size, vals=vals))
-	return(data.frame(mus=vals$tjs/vals$nc, sizes=size))
+	return(data.frame(mus=vals$tjs/vals$nc, sizes=size, N=vals$nc))
+}
+
+fit_ZINB_to_SCE <- function(sce, lab_column="cell_type1") {
+	if (class(sce) != "SingleCellExperiment") {stop("Error: Input must be an SCE object")}
+	if (! ("counts" %in% names(sce@assays))) {stop("Error: Input must contain a counts matrix")}
+	if (! (lab_column %in% colnames(colData(sce)))) {stop("Error: cannot find cell-type labels")}
+
+	type_labs <- colData(sce)[,lab_column]
+	OUT_list <- list()
+	for (type in levels(factor(type_labs))) {
+	        out <- fit_ZINB_to_matrix(sce@assays[["counts"]][,type_labs == type & !is.na(type_labs)]);
+        	OUT_list[[type]] <- out;
+	}
+	return(OUT_list)
 }

@@ -36,8 +36,9 @@ ZINB.sim <- function(gene_means, lib.size, mean.size.fun, K=NULL) {
 child.means <- function(parent.means, relative.dist, sigma=0.5, prop_genes=0.2) {
 	child <- log2(parent.means) + relative.dist*rnorm(length(parent.means), mean=0, sd=sigma)
 	de.genes <- runif(length(child)) < prop_genes
+	child <- 2^child;
 	child[!de.genes] <- parent.means[!de.genes]
-	return(2^child);	
+	return(child);	
 }
 
 # Simulate a random tree #
@@ -107,6 +108,8 @@ sim.tree <- function(tree, mean.size.fun=function(a){return(rep(0.2,length(a)))}
 		ANN <- rbind(ANN, ann)
 		OUT<- cbind(OUT,mat)
 	}
+	require("Matrix")
+	OUT <- Matrix(OUT);
 	require("SingleCellExperiment")
 	colnames(ANN) <- c("lib.size", "Group", "is.Leaf")
 	rownames(ANN) <- colnames(OUT);
@@ -116,7 +119,7 @@ sim.tree <- function(tree, mean.size.fun=function(a){return(rep(0.2,length(a)))}
 	rownames(true_means) <- gene_names;
 	ANN <- data.frame(lib.size=as.numeric(ANN[,1]), Group=factor(ANN[,2]), is.Leaf=as.logical(ANN[,3]))
 	SCE <- SingleCellExperiment(assays=list(counts=OUT), colData=ANN, rowData=true_means);
-	SCE@metadata$group_tree <- Clone(tree);
+	SCE@metadata$true_tree <- Clone(tree);
 	return(SCE);
 }
 
@@ -127,4 +130,25 @@ sim.start.finish.defaults <- function() {
 	tree.n_cells(tree);
 	sce <- sim.tree(tree)
 	return(sce);
+}
+
+fit.sim.params <- function(counts, groups=rep(c(1,2), ceiling(ncol(counts)/2))) {
+	lib_size <- Matrix::colSums(counts);
+	lib_size_params <- fit_gamma(lib_size);
+
+	groups <- group[1:ncol(counts)]
+
+	lognorm <- log2(t(t(counts)/lib_size*mean(lib_size))+1)
+	means <- row_mean_aggregate(lognorm, groups);
+	pairs <- combn(ncol(means), 2)
+	de <- as.vector(means[,pairs[1,]]-means[,pairs[2,]])
+	de <- c(de, -1*de);
+
+	de.sigma <- sd(de[abs(de) > 1])
+	prop_genes <- sum(abs(de) > 1)/length(de);
+	
+	n_cells <- table(groups)
+	n_cells.lim <- c(min(n_cells), max(n_cells));
+	n_cells.fun <- function(x){runif(x, min=n_cells.lim[1], max=n_cells.lim[2])}
+
 }
