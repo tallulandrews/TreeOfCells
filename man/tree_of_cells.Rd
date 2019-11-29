@@ -2,7 +2,7 @@
 \alias{tree_of_cells}
 \title{Build Tree of Cells}
 \description{
-Build Tree of Cells.
+Calculates cell-type x cell-type distance matrix then builds the tree of cell using a neighbour joining algorithm.
 }
 \usage{
 tree_of_cells( merged_profiles, gene_features=rownames(merged_profiles$mus), dist_func=pearson_dist, plot_type="radial")
@@ -14,7 +14,7 @@ tree_of_cells( merged_profiles, gene_features=rownames(merged_profiles$mus), dis
   \item{plot_type}{how to plot the final tree.}
 }
 \details{
-	uses the neighbour joining algorithm (from \code{phangorn} package) to build a tree of cell-types from a pair-wise distance matrix between cell-types. Cell-type distances are calculated using the provided function and the specificed genes.
+	Takes a set of merged profiles for a large number of cell types and calculated cell-type x cell-type distances using the specified distance function and the specified feature genes. This distance matrix is then used as input to the neighbour joining algorithm (from \code{phangorn} package) to build a tree of cell-types.
 }
 \value{
 	list containing the pair-wise distance matrix and the tree object.
