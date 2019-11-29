@@ -28,7 +28,7 @@ Compatible with both regular matrices and sparse matrices as defined in the Matr
 		ng = number of genes
 }
 \examples{
-	counts <- matrix(rnbinom(10000, mean=10, size=0.5), ncol=20);
+	counts <- matrix(rnbinom(10000, mu=10, size=0.5), ncol=20);
 	stats <- calculate_summary_values(counts);
 }
 \keyword{single cell, negative binomial}

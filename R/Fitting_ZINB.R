@@ -34,6 +34,7 @@ fit_ZINB_to_matrix <- function(counts) {
 	out <- sapply(1:vals$ng, function(g) {
 		fit_zero_inflated_negative_binomial(counts[g,], g, vals)
 		})
+	counts <- check_row_col_names(counts);
 	colnames(out) <- rownames(counts);
 	out <- t(out);
 	if (length(zeros) > 0) {
@@ -95,19 +96,21 @@ fit_NB_to_matrix <- function(counts) {
 	size <- vals$tjs^2*(sum(vals$tis^2)/vals$total^2)/((vals$nc-1)*my_rowvar-vals$tjs)
 	max_size <- 10*max(size);
 	size[size < 0] <- max_size;
+	size[size < min_size] <- min_size;
+	
 	#return(list(var_obs=my_rowvar, mus=vals$tjs/vals$nc, sizes=size, vals=vals))
-	return(data.frame(mus=vals$tjs/vals$nc, sizes=size, N=vals$nc))
+	return(data.frame(mu=vals$tjs/vals$nc, r=size, d=rep(0, length(size)), N=vals$nc))
 }
 
 fit_ZINB_to_SCE <- function(sce, lab_column="cell_type1") {
 	if (class(sce) != "SingleCellExperiment") {stop("Error: Input must be an SCE object")}
-	if (! ("counts" %in% names(sce@assays))) {stop("Error: Input must contain a counts matrix")}
-	if (! (lab_column %in% colnames(colData(sce)))) {stop("Error: cannot find cell-type labels")}
+	if (! ("counts" %in% names(SummarizedExperiment::assays(sce)))) {stop("Error: Input must contain a counts matrix")}
+	if (! (lab_column %in% colnames(SingleCellExperiment::colData(sce)))) {stop("Error: cannot find cell-type labels")}
 
-	type_labs <- colData(sce)[,lab_column]
+	type_labs <- SingleCellExperiment::colData(sce)[,lab_column]
 	OUT_list <- list()
 	for (type in levels(factor(type_labs))) {
-	        out <- fit_ZINB_to_matrix(sce@assays[["counts"]][,type_labs == type & !is.na(type_labs)]);
+	        out <- fit_ZINB_to_matrix(SummarizedExperiment::assays(sce)[["counts"]][,type_labs == type & !is.na(type_labs)]);
         	OUT_list[[type]] <- out;
 	}
 	return(OUT_list)

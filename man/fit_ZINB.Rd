@@ -1,6 +1,7 @@
 \name{fit_ZINB_to_matrix}
 \alias{fit_ZINB_to_matrix}
 \alias{fit_NB_to_matrix}
+\alias{fit_ZINB_to_SCE}
 \alias{fit_zero_inflated_negative_binomial}
 \title{Calculate Summary Statistics}
 \description{
@@ -9,6 +10,7 @@ Calculates summary statistics to facilitate the fitting of a ZINB model, perform
 \usage{
 	fit_ZINB_to_matrix(counts)
 	fit_NB_to_matrix(counts)
+	fit_ZINB_to_SCE(sce, lab_column="cell_type1")
 	fit_zero_inflated_negative_binomial(obs, g_row, vals, e=0.00001)
 	
 }
@@ -18,9 +20,13 @@ Calculates summary statistics to facilitate the fitting of a ZINB model, perform
   \item{g_row}{index/row number of the "obs" row}
   \item{vals}{summary statistics from \code{calculate_summary_values}}
   \item{e}{acceptable error for convergence of the EM algorithm}
+  \item{sce}{a SingleCellExperiment object.}
+  \item{lab_column}{name of the column containing the cell-type ids.}
 }
 \details{
 \code{fit_ZINB_to_matrix} calculates summary statistics and runs \code{fit_zero_inflated_negative_binomial} on each row of the count matrix.
+
+\code{fit_ZINB_to_SCE} calculates summary statistics and runs \code{fit_zero_inflated_negative_binomial} on each gene of the count matrix within the SCE object automatically splitting it by cell-type labels in the specified column.
 
 \code{fit_NB_to_matrix} calculates summary statistics and fits a library size adjusted negative binomial to each row of the count matrix.
 
@@ -40,10 +46,11 @@ dj = dropout rate of gene j
 \value{
 \code{fit_zero_inflated_negative_binomial} a vector of mu, r, and d of the ZINB.
 \code{fit_ZINB_to_matrix} a table of mu, r, and d for each gene in the matrix.
+\code{fit_ZINB_to_SCE} a list of tables of mu, r, and d for each gene for each cell-type.
 \code{fit_NB_to_matrix} a table of mu and r for each gene in the matrix.
 }
 \examples{
-	counts <- matrix(rnbinom(10000, mean=10, size=0.5), ncol=20);
+	counts <- matrix(rnbinom(10000, mu=10, size=0.5), ncol=20);
 	fits <- fit_NB_to_matrix(counts);
 
 	z_inflate <- matrix(runif(10000), ncol=20) < 0.2
@@ -52,6 +59,10 @@ dj = dropout rate of gene j
 
 	vals <- calculate_summary_values(counts);
 	fit <- fit_zero_inflated_negative_binomial(counts[3,], 3, vals)
+	require("SingleCellExperiment")
+	sce <- SingleCellExperiment(assays=list("counts"=counts));
+	sce$cell_type = rep(c(1,2), each=10)
+	out <- fit_ZINB_to_SCE(sce, "cell_type")
 }
 \keyword{single cell, negative binomial}
 \seealso{calculate_summary_values}

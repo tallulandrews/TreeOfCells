@@ -5,11 +5,11 @@ Title: Inferring the Tree of Cells
 Author: Tallulah Andrews <tallulandrews@gmail.com>
 Maintainer: Tallulah Andrews <tallulandrews@gmail.com>
 Depends: R (>= 3.2.2)
-Imports: matrixStats, Matrix
-Suggests: knitr
+Imports: matrixStats, Matrix, propr, ape, phangorn, lsa, nlme, preprocessCore, RColorBrewer,SingleCellExperiment, SummarizedExperiment
+Suggests: knitr, SCnorm, sctransform 
 VignetteBuilder: knitr
 biocViews: RNASeq, Sequencing, Transcriptomics, GeneExpression, Software, Pseudotime
-Collate: 
+Collate: General.R Checks.R Fitting_ZINB.R Merge_Profiles.R Normalization.R Feature_Selection.R Distances.R Analysis.R TM_Benchmark.R
 Description: This package will do something at some point.
 URL: https://github.com/tallulandrews/TreeOfCells
 BugReports: https://github.com/tallulandrews/TreeOfCells/issues

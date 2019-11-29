@@ -1,10 +1,14 @@
-run_TM_benchmark <- function(test_fun, norm_facs=total_norm, norm_10x=norm_facs, norm_final=norm_facs) {
-	dat10x <- readRDS("/lustre/scratch117/cellgen/team218/TA/scRNASeqDatasets/TabulaMuris/ForTreeOfCells/All_profiles_10X.rds")
-	datFACs <- readRDS("/lustre/scratch117/cellgen/team218/TA/scRNASeqDatasets/TabulaMuris/ForTreeOfCells/All_profiles_FACS.rds")
+
+TMdat10x_orig <- readRDS("/lustre/scratch117/cellgen/team218/TA/scRNASeqDatasets/TabulaMuris/ForTreeOfCells/All_profiles_10X.rds")
+TMdatFACs_orig <- readRDS("/lustre/scratch117/cellgen/team218/TA/scRNASeqDatasets/TabulaMuris/ForTreeOfCells/All_profiles_FACS.rds")
+
+
+run_TM_benchmark <- function(test_fun, norm_facs=total_norm, norm_10x=norm_facs, norm_final=norm_facs, fs_function=distribution_olap) {
+	# Working combination: my_regression + pearson correlations
 
 	# Norm
-	dat10x <- norm_10x(dat10x);
-	datFACs <- norm_facs(datFACs);
+	dat10x <- norm_10x(TMdat10x_orig);
+	datFACs <- norm_facs(TMdatFACs_orig);
 
 	# Match columns
 	common <- colnames(dat10x$mus)[colnames(dat10x$mus) %in% colnames(datFACs$mus)]
@@ -20,15 +24,15 @@ run_TM_benchmark <- function(test_fun, norm_facs=total_norm, norm_10x=norm_facs,
 		colnames(datFACs[[i]]) <- paste("FACS", colnames(datFACs[[i]]), sep="_")
 	}
 	# Match rows
-	common <- rownames(dat10x$mus)[rownames(dat10x$mus) %in% rownames(datFACs$mus)]
-	n_common_row <- length(common)
-	reorder <- match(common, rownames(dat10x$mus));
+	common_row <- rownames(dat10x$mus)[rownames(dat10x$mus) %in% rownames(datFACs$mus)]
+	n_common_row <- length(common_row)
+	reorder_row <- match(common_row, rownames(dat10x$mus));
 	for (i in 1:length(dat10x)) {
-		dat10x[[i]] <- dat10x[[i]][reorder,]
+		dat10x[[i]] <- dat10x[[i]][reorder_row,]
 	}
-	reorder <- match(common, rownames(datFACs$mus));
+	reorder_row <- match(common_row, rownames(datFACs$mus));
 	for (i in 1:length(datFACs)) {
-		datFACs[[i]] <- datFACs[[i]][reorder,]
+		datFACs[[i]] <- datFACs[[i]][reorder_row,]
 	}
 	# Combine
 	dat_comb <- list();
@@ -36,11 +40,15 @@ run_TM_benchmark <- function(test_fun, norm_facs=total_norm, norm_10x=norm_facs,
 		dat_comb[[i]] <- cbind(datFACs[[i]], dat10x[[i]]);
 	}
 	names(dat_comb) <- names(datFACs)
-	dat_comb <- norm_final(dat_comb, conditions=c(rep(1, ncol(datFACs[[1]])), rep(2, ncol(dat10x[[1]]))));
+	fs <- intersect(fs_function(datFACs), fs_function(dat10x));
+	#fs <- union(fs_function(datFACs), fs_function(dat10x));
+	dat_fs_comb <- apply_feature_selection(dat_comb, fs)
+
+	#dat_comb <- norm_final(dat_comb, conditions=c(rep(1, ncol(datFACs[[1]])), rep(2, ncol(dat10x[[1]]))));
 
 	
 	# Calculate distances
-	dist_all <- test_fun(dat_comb)
+	dist_all <- test_fun(dat_fs_comb)
 	dist_cross <- dist_all[1:n_common_col, n_common_col+(1:n_common_col)]
 	dist_facs <- dist_all[1:n_common_col, 1:n_common_col]
 	dist_10x <- dist_all[n_common_col+(1:n_common_col), n_common_col+(1:n_common_col)]
@@ -62,7 +70,7 @@ run_TM_benchmark <- function(test_fun, norm_facs=total_norm, norm_10x=norm_facs,
 	
 	reg <- lm(a~b+0)
 	return(list(
-#		dist_all=dist_all,
+		dist_all=dist_all,
 #		dist_10x = dist_10x, 
 #		dist_facs=dist_facs, 
 		sim=cor(a, b), 
