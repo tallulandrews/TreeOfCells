@@ -9,7 +9,7 @@ Imports: matrixStats, Matrix, propr, ape, phangorn, lsa, nlme, preprocessCore, R
 Suggests: knitr, SCnorm, sctransform 
 VignetteBuilder: knitr
 biocViews: RNASeq, Sequencing, Transcriptomics, GeneExpression, Software, Pseudotime
-Collate: General.R Checks.R Fitting_ZINB.R Merge_Profiles.R Normalization.R Feature_Selection.R Distances.R Analysis.R TM_Benchmark.R
+Collate: General.R Checks.R Fitting_ZINB.R Merge_Profiles.R Normalization.R Feature_Selection.R Distances.R Analysis.R
 Description: This package will do something at some point.
 URL: https://github.com/tallulandrews/TreeOfCells
 BugReports: https://github.com/tallulandrews/TreeOfCells/issues
