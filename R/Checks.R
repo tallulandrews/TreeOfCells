@@ -60,7 +60,7 @@ check_row_col_names <- function(mat) {
 	r_names <- as.character(rownames(mat))
         if (length(r_names) != nrow(mat)){
                 warning("No gene names, I will create some!")
-                r_names <- paste("cell_type_", 1:nrow(mat), sep="")
+                r_names <- paste("gene_", 1:nrow(mat), sep="")
                 rownames(mat) <- r_names;
         }
 	

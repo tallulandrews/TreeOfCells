@@ -41,7 +41,7 @@ fit_ZINB_to_matrix <- function(counts) {
 		out <- rbind(out, matrix(0, nrow=length(zeros), ncol=ncol(out)))
 		rownames(out) <- c(rownames(counts), names(zeros))
 	}
-	out <- out[order(rownames(out)),]
+#	out <- out[order(rownames(out)),]
 	colnames(out) <- c("mu", "r", "d", "N")
 	return(out);
 }
